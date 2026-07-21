@@ -159,6 +159,7 @@ func main() {
 			showPreferencesDialog(window, refreshData)
 		})
 		app.AddAction(prefAction)
+		app.SetAccelsForAction("app.preferences", []string{"<Primary>comma"})
 
 		refreshData()
 
