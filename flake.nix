@@ -1,5 +1,5 @@
 {
-  description = "GnomeWiz Development Environment";
+  description = "Flow Development Environment";
 
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixos-26.05";

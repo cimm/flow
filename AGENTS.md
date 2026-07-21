@@ -1,4 +1,4 @@
-# GnomeWiz — AI Agent Guidelines
+# Flow — AI Agent Guidelines
 
 A native GTK desktop application for GNOME that interfaces with the local HomeWizard API to monitor real-time electricity, water, and gas consumption.
 
