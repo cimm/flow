@@ -1,6 +1,6 @@
 # Flow
 
-A native GTK desktop application for GNOME that interfaces with the local [HomeWizard](https://www.homewizard.com/) API to monitor real-time electricity, water, and gas consumption.
+A native desktop application for GNOME that interfaces with the local [HomeWizard](https://www.homewizard.com/) API to monitor real-time electricity, water, and gas consumption.
 
 ```bash
 $ nix develop

@@ -16,6 +16,7 @@
           buildInputs = with pkgs; [
             go
             gtk4
+            libadwaita
             pkg-config
             gobject-introspection
           ];

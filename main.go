@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/diamondburned/gotk4-adwaita/pkg/adw"
 	"github.com/diamondburned/gotk4/pkg/gio/v2"
 	"github.com/diamondburned/gotk4/pkg/glib/v2"
 	"github.com/diamondburned/gotk4/pkg/gtk/v4"
@@ -87,48 +88,43 @@ func saveHost(host string) error {
 	return os.WriteFile(path, b, 0644)
 }
 
-func showPreferencesWindow(app *gtk.Application, mainWindow *gtk.ApplicationWindow, onUpdate func()) {
-	win := gtk.NewWindow()
-	win.SetTitle("Preferences")
-	win.SetDefaultSize(300, 100)
-	win.SetTransientFor(&mainWindow.Window)
-	win.SetModal(true)
+func showPreferencesDialog(window *adw.ApplicationWindow, onUpdate func()) {
+	dialog := adw.NewPreferencesDialog()
+	dialog.SetSearchEnabled(false)
 
-	vbox := gtk.NewBox(gtk.OrientationVertical, 10)
-	vbox.SetMarginTop(10)
-	vbox.SetMarginBottom(10)
-	vbox.SetMarginStart(10)
-	vbox.SetMarginEnd(10)
+	page := adw.NewPreferencesPage()
+	page.SetTitle("General")
+	page.SetIconName("preferences-system-symbolic")
 
-	label := gtk.NewLabel("P1 IP Address:")
-	label.SetHAlign(gtk.AlignStart)
+	group := adw.NewPreferencesGroup()
+	group.SetTitle("Connection")
+	group.SetDescription("Configure the HomeWizard P1 meter")
 
-	entry := gtk.NewEntry()
-	entry.SetText(loadHost())
+	ipRow := adw.NewEntryRow()
+	ipRow.SetTitle("IP Address")
+	ipRow.SetText(loadHost())
 
-	win.ConnectCloseRequest(func() bool {
-		saveHost(entry.Text())
+	group.Add(ipRow)
+	page.Add(group)
+	dialog.Add(page)
+
+	dialog.ConnectClosed(func() {
+		saveHost(ipRow.Text())
 		onUpdate()
-		return false
 	})
 
-	vbox.Append(label)
-	vbox.Append(entry)
-
-	win.SetChild(vbox)
-	win.Show()
+	dialog.Present(window)
 }
 
 func main() {
-	app := gtk.NewApplication("io.github.cimm.flow.app", gio.ApplicationFlagsNone)
+	app := adw.NewApplication("io.github.cimm.flow.app", gio.ApplicationFlagsNone)
 
 	app.ConnectActivate(func() {
-		window := gtk.NewApplicationWindow(app)
+		window := adw.NewApplicationWindow(&app.Application)
 		window.SetTitle("Flow")
 		window.SetDefaultSize(300, 150)
 
-		headerBar := gtk.NewHeaderBar()
-		window.SetTitlebar(headerBar)
+		headerBar := adw.NewHeaderBar()
 
 		menu := gio.NewMenu()
 		menu.Append("Preferences", "app.preferences")
@@ -140,8 +136,8 @@ func main() {
 		headerBar.PackEnd(menuBtn)
 
 		powerLabel := gtk.NewLabel("")
-		powerLabel.AddCSSClass("power-label")
-		powerLabel.SetWrap(true)
+		powerLabel.AddCSSClass("title-1")
+		powerLabel.SetVExpand(true)
 
 		refreshData := func() {
 			host := loadHost()
@@ -160,26 +156,17 @@ func main() {
 
 		prefAction := gio.NewSimpleAction("preferences", nil)
 		prefAction.ConnectActivate(func(p *glib.Variant) {
-			showPreferencesWindow(app, window, refreshData)
+			showPreferencesDialog(window, refreshData)
 		})
 		app.AddAction(prefAction)
 
 		refreshData()
 
-		// Apply some basic CSS so it doesn't look completely bare.
-		css := gtk.NewCSSProvider()
-		css.LoadFromString(`
-			.power-label {
-				font-size: 32px;
-				font-weight: bold;
-				margin: 24px;
-				text-align: center;
-			}
-		`)
-		display := window.Widget.Display()
-		gtk.StyleContextAddProviderForDisplay(display, css, gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
+		toolbarView := adw.NewToolbarView()
+		toolbarView.AddTopBar(headerBar)
+		toolbarView.SetContent(powerLabel)
 
-		window.SetChild(powerLabel)
+		window.SetContent(toolbarView)
 		window.Show()
 	})
 
