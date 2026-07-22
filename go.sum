@@ -1,3 +1,5 @@
+codeberg.org/clambin/go-homewizard v0.2.0 h1:HVfuGP7k2a+8wT7PTVI6lO1g2RCQi1avyDyNgxV7EZM=
+codeberg.org/clambin/go-homewizard v0.2.0/go.mod h1:zkkCJ4zzpWPsnbjaSYnTeJK/FCsQ/al7P7GOVBYyqas=
 github.com/KarpelesLab/weak v0.1.1 h1:fNnlPo3aypS9tBzoEQluY13XyUfd/eWaSE/vMvo9s4g=
 github.com/KarpelesLab/weak v0.1.1/go.mod h1:pzXsWs5f2bf+fpgHayTlBE1qJpO3MpJKo5sRaLu1XNw=
 github.com/diamondburned/gotk4-adwaita/pkg v0.0.0-20250703085337-e94555b846b6 h1:WzOC3KtvrC1hJMz3fbJBg0Ye50nt4Tafor+a/bBHNEA=

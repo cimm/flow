@@ -6,8 +6,9 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"context"
 
-	"flow/homewizard"
+	homewizard "codeberg.org/clambin/go-homewizard/client/v1"
 	"github.com/diamondburned/gotk4-adwaita/pkg/adw"
 	"github.com/diamondburned/gotk4/pkg/gio/v2"
 	"github.com/diamondburned/gotk4/pkg/glib/v2"
@@ -70,7 +71,7 @@ func showPreferencesDialog(window *adw.ApplicationWindow, onUpdate func()) {
 	cfg := loadConfig()
 
 	ipRow := adw.NewEntryRow()
-	ipRow.SetTitle("IP Address")
+	ipRow.SetTitle("Host URL (e.g. http://192.168.1.x)")
 	ipRow.SetText(cfg.Host)
 
 	intervalRow := adw.NewSpinRowWithRange(1, 3600, 1)
@@ -128,11 +129,12 @@ func main() {
 			cfg := loadConfig()
 
 			doUpdate := func() bool {
-				data, err := homewizard.FetchP1Data(cfg.Host)
+				client := homewizard.Client{Target: cfg.Host}
+				data, err := client.GetRecentMeasurement(context.Background())
 				if err != nil {
 					log.Printf("Error fetching P1 data: %v", err)
 					if cfg.Host == "" {
-						powerLabel.SetText("Please configure the P1 IP Address in Preferences.")
+						powerLabel.SetText("Please configure the P1 Host URL in Preferences.")
 					} else {
 						powerLabel.SetText(fmt.Sprintf("Error: %v", err))
 					}
