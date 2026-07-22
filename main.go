@@ -157,6 +157,13 @@ func main() {
 		app.AddAction(prefAction)
 		app.SetAccelsForAction("app.preferences", []string{"<Primary>comma"})
 
+		quitAction := gio.NewSimpleAction("quit", nil)
+		quitAction.ConnectActivate(func(p *glib.Variant) {
+			app.Quit()
+		})
+		app.AddAction(quitAction)
+		app.SetAccelsForAction("app.quit", []string{"<Primary>q"})
+
 		startPolling()
 
 		toolbarView := adw.NewToolbarView()
