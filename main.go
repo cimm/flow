@@ -60,30 +60,31 @@ func getConfigPath() (string, error) {
 	return filepath.Join(appDir, "config.json"), nil
 }
 
-func loadHost() string {
-	path, err := getConfigPath()
-	if err != nil {
-		return ""
-	}
-	b, err := os.ReadFile(path)
-	if err != nil {
-		return ""
-	}
-	var cfg struct {
-		Host string `json:"host"`
-	}
-	json.Unmarshal(b, &cfg)
-	return cfg.Host
+type AppConfig struct {
+	Host     string `json:"host"`
+	Interval int    `json:"interval"` // Update interval in seconds
 }
 
-func saveHost(host string) error {
+func loadConfig() AppConfig {
+	path, err := getConfigPath()
+	var cfg AppConfig
+	if err == nil {
+		b, err := os.ReadFile(path)
+		if err == nil {
+			json.Unmarshal(b, &cfg)
+		}
+	}
+	if cfg.Interval <= 0 {
+		cfg.Interval = 1 // default to 1 second
+	}
+	return cfg
+}
+
+func saveConfig(cfg AppConfig) error {
 	path, err := getConfigPath()
 	if err != nil {
 		return err
 	}
-	cfg := struct {
-		Host string `json:"host"`
-	}{Host: host}
 	b, _ := json.Marshal(cfg)
 	return os.WriteFile(path, b, 0644)
 }
@@ -100,16 +101,27 @@ func showPreferencesDialog(window *adw.ApplicationWindow, onUpdate func()) {
 	group.SetTitle("Connection")
 	group.SetDescription("Configure the HomeWizard P1 meter")
 
+	cfg := loadConfig()
+
 	ipRow := adw.NewEntryRow()
 	ipRow.SetTitle("IP Address")
-	ipRow.SetText(loadHost())
+	ipRow.SetText(cfg.Host)
+
+	intervalRow := adw.NewSpinRowWithRange(1, 3600, 1)
+	intervalRow.SetTitle("Update Interval in Seconds")
+	intervalRow.SetValue(float64(cfg.Interval))
 
 	group.Add(ipRow)
+	group.Add(intervalRow)
 	page.Add(group)
 	dialog.Add(page)
 
 	dialog.ConnectClosed(func() {
-		saveHost(ipRow.Text())
+		newCfg := AppConfig{
+			Host:     ipRow.Text(),
+			Interval: int(intervalRow.Value()),
+		}
+		saveConfig(newCfg)
 		onUpdate()
 	})
 
@@ -139,29 +151,45 @@ func main() {
 		powerLabel.AddCSSClass("title-1")
 		powerLabel.SetVExpand(true)
 
-		refreshData := func() {
-			host := loadHost()
-			data, err := fetchP1Data(host)
-			if err != nil {
-				log.Printf("Error fetching P1 data: %v", err)
-				if host == "" {
-					powerLabel.SetText("Please configure the P1 IP Address in Preferences.")
-				} else {
-					powerLabel.SetText(fmt.Sprintf("Error: %v", err))
-				}
-			} else {
-				powerLabel.SetText(fmt.Sprintf("⚡ %.0f W", data.ActivePowerW))
+		var timeoutId glib.SourceHandle
+
+		startPolling := func() {
+			if timeoutId != 0 {
+				glib.SourceRemove(timeoutId)
+				timeoutId = 0
 			}
+
+			cfg := loadConfig()
+
+			doUpdate := func() bool {
+				data, err := fetchP1Data(cfg.Host)
+				if err != nil {
+					log.Printf("Error fetching P1 data: %v", err)
+					if cfg.Host == "" {
+						powerLabel.SetText("Please configure the P1 IP Address in Preferences.")
+					} else {
+						powerLabel.SetText(fmt.Sprintf("Error: %v", err))
+					}
+				} else {
+					powerLabel.SetText(fmt.Sprintf("⚡ %.0f W", data.ActivePowerW))
+				}
+				return true
+			}
+
+			// Call once immediately
+			doUpdate()
+
+			timeoutId = glib.TimeoutAdd(uint(cfg.Interval*1000), doUpdate)
 		}
 
 		prefAction := gio.NewSimpleAction("preferences", nil)
 		prefAction.ConnectActivate(func(p *glib.Variant) {
-			showPreferencesDialog(window, refreshData)
+			showPreferencesDialog(window, startPolling)
 		})
 		app.AddAction(prefAction)
 		app.SetAccelsForAction("app.preferences", []string{"<Primary>comma"})
 
-		refreshData()
+		startPolling()
 
 		toolbarView := adw.NewToolbarView()
 		toolbarView.AddTopBar(headerBar)
