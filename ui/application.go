@@ -16,7 +16,7 @@ import (
 func Activate(app *adw.Application) {
 	window := adw.NewApplicationWindow(&app.Application)
 	window.SetTitle("Flow")
-	window.SetDefaultSize(300, 150)
+	window.SetDefaultSize(340, 250)
 
 	cssProvider := gtk.NewCSSProvider()
 	cssProvider.LoadFromString(`
@@ -41,11 +41,31 @@ func Activate(app *adw.Application) {
 	powerLabel.SetMarginTop(12)
 	powerLabel.SetMarginBottom(12)
 
-	contentBox := gtk.NewBox(gtk.OrientationVertical, 0)
-	graph := NewGraph(contentBox)
+	powerBox := gtk.NewBox(gtk.OrientationVertical, 0)
+	powerBox.AddCSSClass("card")
+	powerBox.SetMarginTop(12)
+	powerBox.SetMarginBottom(12)
+	powerBox.SetMarginStart(12)
+	powerBox.SetMarginEnd(12)
+	powerBox.SetHExpand(true)
 
-	contentBox.Append(powerLabel)
-	contentBox.Append(graph)
+	powerGraph := NewGraph(powerBox)
+
+	powerBox.Append(powerLabel)
+	powerBox.Append(powerGraph)
+	carousel := adw.NewCarousel()
+	carousel.Append(powerBox)
+
+	dots := adw.NewCarouselIndicatorDots()
+	dots.SetCarousel(carousel)
+	dots.SetHExpand(true)
+	dots.SetHAlign(gtk.AlignCenter)
+	dots.SetMarginTop(6)
+	dots.SetMarginBottom(6)
+
+	outerBox := gtk.NewBox(gtk.OrientationVertical, 0)
+	outerBox.Append(carousel)
+	outerBox.Append(dots)
 
 	var timeoutId glib.SourceHandle
 
@@ -71,16 +91,16 @@ func Activate(app *adw.Application) {
 				powerLabel.SetText(fmt.Sprintf("%.0f W", data.ActivePowerW))
 				if data.ActivePowerW > 0 {
 					powerLabel.RemoveCSSClass("power-negative")
-					graph.RemoveCSSClass("power-negative")
+					powerGraph.RemoveCSSClass("power-negative")
 					powerLabel.AddCSSClass("power-positive")
-					graph.AddCSSClass("power-positive")
+					powerGraph.AddCSSClass("power-positive")
 				} else {
 					powerLabel.RemoveCSSClass("power-positive")
-					graph.RemoveCSSClass("power-positive")
+					powerGraph.RemoveCSSClass("power-positive")
 					powerLabel.AddCSSClass("power-negative")
-					graph.AddCSSClass("power-negative")
+					powerGraph.AddCSSClass("power-negative")
 				}
-				graph.AddValue(data.ActivePowerW)
+				powerGraph.AddValue(data.ActivePowerW)
 			}
 			return true
 		}
@@ -109,7 +129,7 @@ func Activate(app *adw.Application) {
 
 	toolbarView := adw.NewToolbarView()
 	toolbarView.AddTopBar(headerBar)
-	toolbarView.SetContent(contentBox)
+	toolbarView.SetContent(outerBox)
 
 	window.SetContent(toolbarView)
 	window.Show()
