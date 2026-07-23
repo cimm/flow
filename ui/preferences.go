@@ -21,7 +21,8 @@ func showPreferencesDialog(window *adw.ApplicationWindow, onUpdate func()) {
 	ipRow.SetText(cfg.Host)
 
 	intervalRow := adw.NewSpinRowWithRange(1, 3600, 1)
-	intervalRow.SetTitle("Update Interval in Seconds")
+	intervalRow.SetTitle("Update Interval")
+	intervalRow.SetSubtitle("in seconds")
 	intervalRow.SetValue(float64(cfg.Interval))
 
 	group.Add(ipRow)
