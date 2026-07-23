@@ -2,11 +2,24 @@ package ui
 
 import (
 	"github.com/diamondburned/gotk4-adwaita/pkg/adw"
+	"github.com/diamondburned/gotk4/pkg/glib/v2"
+	"github.com/diamondburned/gotk4/pkg/gtk/v4"
 )
 
 func showPreferencesDialog(window *adw.ApplicationWindow, onUpdate func()) {
 	dialog := adw.NewPreferencesDialog()
 	dialog.SetSearchEnabled(false)
+
+	shortcut := gtk.NewShortcut(
+		gtk.NewShortcutTriggerParseString("<Primary>w"),
+		gtk.NewCallbackAction(func(widget gtk.Widgetter, args *glib.Variant) bool {
+			dialog.Close()
+			return true
+		}),
+	)
+	controller := gtk.NewShortcutController()
+	controller.AddShortcut(shortcut)
+	dialog.AddController(controller)
 
 	page := adw.NewPreferencesPage()
 
