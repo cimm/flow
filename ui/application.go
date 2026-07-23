@@ -30,7 +30,14 @@ func Activate(app *adw.Application) {
 
 	powerLabel := gtk.NewLabel("")
 	powerLabel.AddCSSClass("title-1")
-	powerLabel.SetVExpand(true)
+	powerLabel.SetMarginTop(12)
+	powerLabel.SetMarginBottom(12)
+
+	graph := NewGraph()
+
+	contentBox := gtk.NewBox(gtk.OrientationVertical, 0)
+	contentBox.Append(powerLabel)
+	contentBox.Append(graph)
 
 	var timeoutId glib.SourceHandle
 
@@ -54,6 +61,7 @@ func Activate(app *adw.Application) {
 				}
 			} else {
 				powerLabel.SetText(fmt.Sprintf("⚡ %.0f W", data.ActivePowerW))
+				graph.AddValue(data.ActivePowerW)
 			}
 			return true
 		}
@@ -82,7 +90,7 @@ func Activate(app *adw.Application) {
 
 	toolbarView := adw.NewToolbarView()
 	toolbarView.AddTopBar(headerBar)
-	toolbarView.SetContent(powerLabel)
+	toolbarView.SetContent(contentBox)
 
 	window.SetContent(toolbarView)
 	window.Show()
