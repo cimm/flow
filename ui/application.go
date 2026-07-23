@@ -7,6 +7,7 @@ import (
 
 	homewizard "codeberg.org/clambin/go-homewizard/client/v1"
 	"github.com/diamondburned/gotk4-adwaita/pkg/adw"
+	"github.com/diamondburned/gotk4/pkg/gdk/v4"
 	"github.com/diamondburned/gotk4/pkg/gio/v2"
 	"github.com/diamondburned/gotk4/pkg/glib/v2"
 	"github.com/diamondburned/gotk4/pkg/gtk/v4"
@@ -16,6 +17,13 @@ func Activate(app *adw.Application) {
 	window := adw.NewApplicationWindow(&app.Application)
 	window.SetTitle("Flow")
 	window.SetDefaultSize(300, 150)
+
+	cssProvider := gtk.NewCSSProvider()
+	cssProvider.LoadFromString(`
+		.power-label { color: var(--accent-bg-color); }
+		.power-graph { color: var(--accent-bg-color); }
+	`)
+	gtk.StyleContextAddProviderForDisplay(gdk.DisplayGetDefault(), cssProvider, gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
 
 	headerBar := adw.NewHeaderBar()
 
@@ -30,10 +38,12 @@ func Activate(app *adw.Application) {
 
 	powerLabel := gtk.NewLabel("")
 	powerLabel.AddCSSClass("title-1")
+	powerLabel.AddCSSClass("power-label")
 	powerLabel.SetMarginTop(12)
 	powerLabel.SetMarginBottom(12)
 
 	graph := NewGraph()
+	graph.AddCSSClass("power-graph")
 
 	contentBox := gtk.NewBox(gtk.OrientationVertical, 0)
 	contentBox.Append(powerLabel)
@@ -60,7 +70,7 @@ func Activate(app *adw.Application) {
 					powerLabel.SetText(fmt.Sprintf("Error: %v", err))
 				}
 			} else {
-				powerLabel.SetText(fmt.Sprintf("⚡ %.0f W", data.ActivePowerW))
+				powerLabel.SetText(fmt.Sprintf("%.0f W", data.ActivePowerW))
 				graph.AddValue(data.ActivePowerW)
 			}
 			return true

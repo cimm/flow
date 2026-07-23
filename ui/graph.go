@@ -72,7 +72,8 @@ func (g *Graph) draw(area *gtk.DrawingArea, cr *cairo.Context, width, height int
 	now := time.Now()
 
 	// Draw line
-	cr.SetSourceRGB(0.2, 0.6, 1.0)
+	color := area.Color()
+	cr.SetSourceRGBA(float64(color.Red()), float64(color.Green()), float64(color.Blue()), float64(color.Alpha()))
 	cr.SetLineWidth(2.0)
 
 	started := false
