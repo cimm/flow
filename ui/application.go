@@ -20,8 +20,8 @@ func Activate(app *adw.Application) {
 
 	cssProvider := gtk.NewCSSProvider()
 	cssProvider.LoadFromString(`
-		.power-label { color: var(--accent-bg-color); }
-		.power-graph { color: var(--accent-bg-color); }
+	  .power-positive { color: var(--accent-purple); }
+		.power-negative { color: var(--accent-green); }
 	`)
 	gtk.StyleContextAddProviderForDisplay(gdk.DisplayGetDefault(), cssProvider, gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
 
@@ -38,12 +38,10 @@ func Activate(app *adw.Application) {
 
 	powerLabel := gtk.NewLabel("")
 	powerLabel.AddCSSClass("title-1")
-	powerLabel.AddCSSClass("power-label")
 	powerLabel.SetMarginTop(12)
 	powerLabel.SetMarginBottom(12)
 
 	graph := NewGraph()
-	graph.AddCSSClass("power-graph")
 
 	contentBox := gtk.NewBox(gtk.OrientationVertical, 0)
 	contentBox.Append(powerLabel)
@@ -71,6 +69,17 @@ func Activate(app *adw.Application) {
 				}
 			} else {
 				powerLabel.SetText(fmt.Sprintf("%.0f W", data.ActivePowerW))
+				if data.ActivePowerW > 0 {
+					powerLabel.RemoveCSSClass("power-negative")
+					graph.RemoveCSSClass("power-negative")
+					powerLabel.AddCSSClass("power-positive")
+					graph.AddCSSClass("power-positive")
+				} else {
+					powerLabel.RemoveCSSClass("power-positive")
+					graph.RemoveCSSClass("power-positive")
+					powerLabel.AddCSSClass("power-negative")
+					graph.AddCSSClass("power-negative")
+				}
 				graph.AddValue(data.ActivePowerW)
 			}
 			return true

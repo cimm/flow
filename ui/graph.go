@@ -14,12 +14,21 @@ type DataPoint struct {
 
 type Graph struct {
 	*gtk.DrawingArea
-	data []DataPoint
+	data     []DataPoint
+	posDummy *gtk.Label
+	negDummy *gtk.Label
 }
 
 func NewGraph() *Graph {
+	pos := gtk.NewLabel("")
+	pos.AddCSSClass("power-positive")
+	neg := gtk.NewLabel("")
+	neg.AddCSSClass("power-negative")
+
 	g := &Graph{
 		DrawingArea: gtk.NewDrawingArea(),
+		posDummy:    pos,
+		negDummy:    neg,
 	}
 	g.SetDrawFunc(g.draw)
 	g.SetVExpand(true)
@@ -69,13 +78,33 @@ func (g *Graph) draw(area *gtk.DrawingArea, cr *cairo.Context, width, height int
 	minY -= pad
 	maxY += pad
 
-	now := time.Now()
+	// Find yZero where value == 0
+	yZero := float64(height)
+	if maxY > minY {
+		yZero = float64(height) * (1.0 - (0.0-minY)/(maxY-minY))
+	}
 
-	// Draw line
-	color := area.Color()
-	cr.SetSourceRGBA(float64(color.Red()), float64(color.Green()), float64(color.Blue()), float64(color.Alpha()))
+	posColor := g.posDummy.Color()
+	negColor := g.negDummy.Color()
+
+	pat, _ := cairo.NewPatternLinear(0, 0, 0, float64(height))
+	ratio := yZero / float64(height)
+
+	if ratio <= 0 {
+		pat.AddColorStopRGBA(0, float64(negColor.Red()), float64(negColor.Green()), float64(negColor.Blue()), float64(negColor.Alpha()))
+	} else if ratio >= 1 {
+		pat.AddColorStopRGBA(0, float64(posColor.Red()), float64(posColor.Green()), float64(posColor.Blue()), float64(posColor.Alpha()))
+	} else {
+		pat.AddColorStopRGBA(0, float64(posColor.Red()), float64(posColor.Green()), float64(posColor.Blue()), float64(posColor.Alpha()))
+		pat.AddColorStopRGBA(ratio, float64(posColor.Red()), float64(posColor.Green()), float64(posColor.Blue()), float64(posColor.Alpha()))
+		pat.AddColorStopRGBA(ratio, float64(negColor.Red()), float64(negColor.Green()), float64(negColor.Blue()), float64(negColor.Alpha()))
+		pat.AddColorStopRGBA(1, float64(negColor.Red()), float64(negColor.Green()), float64(negColor.Blue()), float64(negColor.Alpha()))
+	}
+
+	cr.SetSource(pat)
 	cr.SetLineWidth(2.0)
 
+	now := time.Now()
 	started := false
 	for _, d := range g.data {
 		age := now.Sub(d.Time).Seconds()
