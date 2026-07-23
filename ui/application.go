@@ -20,8 +20,8 @@ func Activate(app *adw.Application) {
 
 	cssProvider := gtk.NewCSSProvider()
 	cssProvider.LoadFromString(`
-	  .power-positive { color: var(--accent-purple); }
-		.power-negative { color: var(--accent-green); }
+		.power-positive { color: var(--warning-color); }
+		.power-negative { color: var(--success-color); }
 	`)
 	gtk.StyleContextAddProviderForDisplay(gdk.DisplayGetDefault(), cssProvider, gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
 
@@ -41,9 +41,9 @@ func Activate(app *adw.Application) {
 	powerLabel.SetMarginTop(12)
 	powerLabel.SetMarginBottom(12)
 
-	graph := NewGraph()
-
 	contentBox := gtk.NewBox(gtk.OrientationVertical, 0)
+	graph := NewGraph(contentBox)
+
 	contentBox.Append(powerLabel)
 	contentBox.Append(graph)
 

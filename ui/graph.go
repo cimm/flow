@@ -19,11 +19,19 @@ type Graph struct {
 	negDummy *gtk.Label
 }
 
-func NewGraph() *Graph {
+func NewGraph(parentBox *gtk.Box) *Graph {
 	pos := gtk.NewLabel("")
 	pos.AddCSSClass("power-positive")
+	pos.SetVisible(false)
+
 	neg := gtk.NewLabel("")
 	neg.AddCSSClass("power-negative")
+	neg.SetVisible(false)
+
+	if parentBox != nil {
+		parentBox.Append(pos)
+		parentBox.Append(neg)
+	}
 
 	g := &Graph{
 		DrawingArea: gtk.NewDrawingArea(),
