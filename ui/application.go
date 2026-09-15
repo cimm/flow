@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"net/http"
+	"time"
 
 	homewizard "codeberg.org/clambin/go-homewizard/client/v1"
 	"github.com/diamondburned/gotk4-adwaita/pkg/adw"
@@ -11,6 +13,11 @@ import (
 	"github.com/diamondburned/gotk4/pkg/gio/v2"
 	"github.com/diamondburned/gotk4/pkg/glib/v2"
 	"github.com/diamondburned/gotk4/pkg/gtk/v4"
+)
+
+const (
+	pollRequestTimeout = 5 * time.Second
+	pollSlowInterval   = 30 * time.Second
 )
 
 func Activate(app *adw.Application) {
@@ -67,48 +74,86 @@ func Activate(app *adw.Application) {
 	outerBox.Append(carousel)
 	outerBox.Append(dots)
 
-	var timeoutId glib.SourceHandle
+	httpClient := &http.Client{Timeout: pollRequestTimeout}
+	var pollCancel context.CancelFunc
 
 	startPolling := func() {
-		if timeoutId != 0 {
-			glib.SourceRemove(timeoutId)
-			timeoutId = 0
+		if pollCancel != nil {
+			pollCancel()
 		}
 
 		cfg := loadConfig()
 
-		doUpdate := func() bool {
-			client := homewizard.Client{Target: cfg.Host}
-			data, err := client.GetRecentMeasurement(context.Background())
+		pollCtx, cancel := context.WithCancel(context.Background())
+		pollCancel = cancel
+
+		renderMeasurement := func(data *homewizard.RecentMeasurement, host string, err error) {
 			if err != nil {
-				log.Printf("Error fetching P1 data: %v", err)
-				if cfg.Host == "" {
+				if host == "" {
 					powerLabel.SetText("Please configure the P1 Host URL in Preferences.")
 				} else {
 					powerLabel.SetText(fmt.Sprintf("Error: %v", err))
 				}
-			} else {
-				powerLabel.SetText(fmt.Sprintf("%.0f W", data.ActivePowerW))
-				if data.ActivePowerW > 0 {
-					powerLabel.RemoveCSSClass("power-negative")
-					powerGraph.RemoveCSSClass("power-negative")
-					powerLabel.AddCSSClass("power-positive")
-					powerGraph.AddCSSClass("power-positive")
-				} else {
-					powerLabel.RemoveCSSClass("power-positive")
-					powerGraph.RemoveCSSClass("power-positive")
-					powerLabel.AddCSSClass("power-negative")
-					powerGraph.AddCSSClass("power-negative")
-				}
-				powerGraph.AddValue(data.ActivePowerW)
+				return
 			}
-			return true
+			powerLabel.SetText(fmt.Sprintf("%.0f W", data.ActivePowerW))
+			if data.ActivePowerW > 0 {
+				powerLabel.RemoveCSSClass("power-negative")
+				powerGraph.RemoveCSSClass("power-negative")
+				powerLabel.AddCSSClass("power-positive")
+				powerGraph.AddCSSClass("power-positive")
+			} else {
+				powerLabel.RemoveCSSClass("power-positive")
+				powerGraph.RemoveCSSClass("power-positive")
+				powerLabel.AddCSSClass("power-negative")
+				powerGraph.AddCSSClass("power-negative")
+			}
+			powerGraph.AddValue(data.ActivePowerW)
 		}
 
-		// Call once immediately
-		doUpdate()
+		doUpdate := func() error {
+			reqCtx, reqCancel := context.WithTimeout(pollCtx, pollRequestTimeout)
+			defer reqCancel()
+			client := homewizard.Client{HTTPClient: httpClient, Target: cfg.Host}
+			data, err := client.GetRecentMeasurement(reqCtx)
+			if err == nil {
+				d := data
+				glib.IdleAdd(func() { renderMeasurement(&d, cfg.Host, nil) })
+				return nil
+			}
+			if pollCtx.Err() != nil {
+				return err
+			}
+			log.Printf("Error fetching P1 data: %v", err)
+			host := cfg.Host
+			e := err
+			glib.IdleAdd(func() { renderMeasurement(nil, host, e) })
+			return err
+		}
 
-		timeoutId = glib.TimeoutAdd(uint(cfg.Interval*1000), doUpdate)
+		go func() {
+			slowMode := doUpdate() != nil
+
+			nextInterval := func() time.Duration {
+				if slowMode {
+					return pollSlowInterval
+				}
+				return time.Duration(cfg.Interval) * time.Second
+			}
+
+			timer := time.NewTimer(nextInterval())
+			defer timer.Stop()
+
+			for {
+				select {
+				case <-pollCtx.Done():
+					return
+				case <-timer.C:
+					slowMode = doUpdate() != nil
+					timer.Reset(nextInterval())
+				}
+			}
+		}()
 	}
 
 	prefAction := gio.NewSimpleAction("preferences", nil)
@@ -120,6 +165,9 @@ func Activate(app *adw.Application) {
 
 	quitAction := gio.NewSimpleAction("quit", nil)
 	quitAction.ConnectActivate(func(p *glib.Variant) {
+		if pollCancel != nil {
+			pollCancel()
+		}
 		app.Quit()
 	})
 	app.AddAction(quitAction)
