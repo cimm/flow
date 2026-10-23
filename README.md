@@ -5,6 +5,14 @@ A native desktop application for GNOME that interfaces with the local [HomeWizar
 > [!NOTE]
 > This is a personal project and may not work for everyone. Use at your own risk.
 
+## Running
+
+Run the app:
+
+```
+nix run github:cimm/flow
+```
+
 ## Compiling
 
 Build the app:
