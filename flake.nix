@@ -12,6 +12,33 @@
         pkgs = nixpkgs.legacyPackages.${system};
       in
       {
+        packages.default = pkgs.buildGoModule {
+          pname = "flow";
+          version = "0.1.0";
+          src = ./.;
+
+          vendorHash = "sha256-6fV4G9sv1DAWhZLRxHYVpAGM9N/nD5oLLepV1+ZgN88=";
+
+          nativeBuildInputs = with pkgs; [
+            pkg-config
+            gobject-introspection
+            wrapGAppsHook4
+          ];
+
+          buildInputs = with pkgs; [
+            gtk4
+            libadwaita
+          ];
+
+          # Allow gotk4's unsafe assume-no-moving-gc
+          tags = [ "purego" ];
+
+          meta = {
+            description = "HomeWizard energy monitor";
+            mainProgram = "flow";
+          };
+        };
+
         devShells.default = pkgs.mkShell {
           buildInputs = with pkgs; [
             go
