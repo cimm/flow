@@ -2,10 +2,18 @@
 
 A native desktop application for GNOME that interfaces with the local [HomeWizard](https://www.homewizard.com/) API to monitor real-time electricity, water, and gas consumption.
 
+> [!NOTE]
+> This is a personal project and may not work for everyone. Use at your own risk.
+
+## Compiling
+
+Build the app:
+
 ```bash
-$ nix develop
-$ HOMEWIZARD_HOST=<your-p1-ip> ./flow
+nix build
 ```
+
+This produces `./result/bin/flow`, which is a properly wrapped binary that will work on NixOS — even after a restart or garbage collection.
 
 ## AI Disclaimer
 
