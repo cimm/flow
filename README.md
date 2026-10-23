@@ -5,6 +5,8 @@ A native desktop application for GNOME that interfaces with the local [HomeWizar
 > [!NOTE]
 > This is a personal project and may not work for everyone. Use at your own risk.
 
+![Screenshot of the main window](flow-screenshot.avif)
+
 ## Running
 
 Run the app:
@@ -25,4 +27,4 @@ This produces `./result/bin/flow`, which is a properly wrapped binary that will 
 
 ## AI Disclaimer
 
-his application was developed with the help of a Large Language Model (LLM). As a result, the code may be slop.
+This application was developed with the help of a Large Language Model (LLM). As a result, the code may be slop.
