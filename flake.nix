@@ -30,6 +30,18 @@
             libadwaita
           ];
 
+          # Desktop launcher entry
+          desktopItems = [
+            (pkgs.makeDesktopItem {
+              name = "flow";
+              desktopName = "Flow";
+              comment = "HomeWizard energy monitor";
+              exec = "flow";
+              icon = "utilities-system-monitor";
+              categories = [ "Utility" "Monitor" ];
+            })
+          ];
+
           # Allow gotk4's unsafe assume-no-moving-gc
           tags = [ "purego" ];
 
